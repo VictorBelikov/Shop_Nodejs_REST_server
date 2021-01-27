@@ -4,6 +4,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -44,11 +45,12 @@ app.use((req, res, next) => {
 });
 
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
 
 // Special 'express' middleware for handling all errors in the app. Fires like 'next(new Error(err))' from other places.
 app.use((err, req, res, next) => {
   console.log(err);
-  res.status(err.statusCode).json({ message: err.message });
+  res.status(err.statusCode).json({ message: err.message, data: err.data });
 });
 
 module.exports = app;
