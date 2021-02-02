@@ -1,10 +1,11 @@
 const http = require('http');
 const mongoose = require('mongoose');
+const socket = require('./socket');
 
 const app = require('./app');
 
 const port = process.env.PORT || 8080;
-const server = http.createServer(app);
+const httpServer = http.createServer(app);
 
 mongoose
   .connect(
@@ -15,7 +16,13 @@ mongoose
       useFindAndModify: false,
     },
   )
-  .then(() => server.listen(port, () => console.log(`Server is listening on port ${port} ...`)))
+  .then(() => {
+    const server = httpServer.listen(port, () => console.log(`Server is listening on port ${port} ...`));
+    const io = socket.init(server);
+    io.on('connection', (socket) => {
+      console.log('Client connected to the socket');
+    });
+  })
   .catch((err) => console.log('Error while connecting to DB: ', err));
 
 // ========================= Create server more simple way ==============================
