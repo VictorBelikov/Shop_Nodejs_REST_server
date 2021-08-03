@@ -28,6 +28,7 @@
     "eol-last": "off",
     "no-multiple-empty-lines": "off",
     "object-curly-spacing": "off",
-    "func-names": "off"
+    "func-names": "off",
+    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
   }
 }
