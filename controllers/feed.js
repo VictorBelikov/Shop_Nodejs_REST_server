@@ -3,10 +3,11 @@ const User = require('../models/user');
 const ErrorService = require('../utils/error-service');
 const deleteFile = require('../utils/delete-file');
 const validateInputErrors = require('../utils/validate-input-errors');
+const socket = require('../utils/socket-io');
 
 const findPost = async (req) => {
   const { postId } = req.params;
-  const post = await Post.findById(postId);
+  const post = await Post.findById(postId).populate('creator');
   if (!post) {
     throw ErrorService(404, `Could not find a post with ID ${postId}`);
   }
@@ -20,6 +21,8 @@ exports.getPosts = async (req, res, next) => {
 
     const totalItems = await Post.find().countDocuments();
     const posts = await Post.find()
+      .populate('creator')
+      .sort({ createdAt: -1 })
       .skip((page - 1) * perPage)
       .limit(perPage);
 
@@ -41,6 +44,12 @@ exports.createPost = async (req, res, next) => {
     const user = await User.findById(req.userId);
     user.posts.push(post);
     await user.save();
+
+    // emit() - sends to all; broadcast() - sends to all except the one from which request was sent.
+    socket
+      .getIo()
+      .emit('posts', { action: 'create', post: { ...post._doc, creator: { _id: req.userId, name: user.name } } });
+
     res.status(201).json({ message: 'Post created successfully!', post, creator: user.email });
   } catch (e) {
     next(e);
@@ -79,6 +88,10 @@ exports.updatePost = async (req, res, next) => {
     post.content = content;
     post.imageUrl = imageUrl;
     const updatedPost = await post.save();
+
+    // emit() - sends to all; broadcast() - sends to all except the one from which request was sent.
+    socket.getIo().emit('posts', { action: 'update', post: updatedPost });
+
     res.status(200).json({ message: 'Post updated', post: updatedPost });
   } catch (e) {
     next(e);
@@ -92,11 +105,14 @@ exports.deletePost = async (req, res, next) => {
       throw ErrorService(403, 'Not Authorized!', 'Another user created this post, not you');
     }
     deleteFile(post.imageUrl);
-    await Post.deleteOne();
+    await Post.deleteOne({ _id: post._id });
 
     const user = await User.findById(req.userId);
     user.posts.pull(req.params.postId);
     await user.save();
+
+    // emit() - sends to all; broadcast() - sends to all except the one from which request was sent.
+    socket.getIo().emit('posts', { action: 'delete', post });
 
     res.status(200).json({ message: 'Post deleted', deletedPost: post });
   } catch (e) {

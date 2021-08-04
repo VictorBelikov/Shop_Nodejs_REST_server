@@ -2,15 +2,16 @@ const http = require('http');
 const mongoose = require('mongoose');
 
 const app = require('./app');
+const socket = require('./utils/socket-io');
 
 const port = process.env.PORT || 8080;
 
-const server = http.createServer(app);
+const httpServer = http.createServer(app);
 
 (async () => {
   try {
     await mongoose.connect(
-      'mongodb+srv://V1ctoR:WwMEMQ54Y7T1K1Xk@online-shop.5yjc5.mongodb.net/shop_mongoose_rest?retryWrites=true&w=majority',
+      `mongodb://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@online-shop-shard-00-00.5yjc5.mongodb.net:27017,online-shop-shard-00-01.5yjc5.mongodb.net:27017,online-shop-shard-00-02.5yjc5.mongodb.net:27017/${process.env.DB_NAME}?ssl=true&replicaSet=atlas-uxfy7r-shard-0&authSource=admin&retryWrites=true&w=majority`,
       {
         useNewUrlParser: true,
         useUnifiedTopology: true,
@@ -18,7 +19,9 @@ const server = http.createServer(app);
       },
     );
 
-    server.listen(port, () => console.log(`Server is listening on port ${port} ...`));
+    const server = httpServer.listen(port, () => console.log(`Server is listening on port ${port} ...`));
+    const io = socket.init(server);
+    io.on('connection', (_socket) => console.log('=== Client connected to the socket ==='));
   } catch (e) {
     console.error('Error while connecting to DB: ', e);
   }
