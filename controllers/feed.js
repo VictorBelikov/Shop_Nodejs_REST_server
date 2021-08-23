@@ -43,7 +43,7 @@ exports.createPost = async (req, res, next) => {
     const post = await new Post({ title, content, imageUrl: req.file.path, creator: req.userId }).save();
     const user = await User.findById(req.userId);
     user.posts.push(post);
-    await user.save();
+    const savedUser = await user.save();
 
     // emit() - sends to all; broadcast() - sends to all except the one from which request was sent.
     socket
@@ -51,6 +51,7 @@ exports.createPost = async (req, res, next) => {
       .emit('posts', { action: 'create', post: { ...post._doc, creator: { _id: req.userId, name: user.name } } });
 
     res.status(201).json({ message: 'Post created successfully!', post, creator: user.email });
+    return savedUser; // // Added this string only for the unit test reason
   } catch (e) {
     next(e);
   }

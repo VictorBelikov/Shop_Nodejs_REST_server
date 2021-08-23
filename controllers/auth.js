@@ -47,6 +47,7 @@ exports.login = async (req, res, next) => {
     res.status(200).json({ token, userId: user._id.toString() });
   } catch (e) {
     next(e);
+    return e; // Added this string only for the unit test reason
   }
 };
 

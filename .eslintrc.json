@@ -9,7 +9,7 @@
   "parserOptions": {
     "ecmaVersion": 12
   },
-  "ignorePatterns": [],
+  "ignorePatterns": ["test"],
   "rules": {
     "max-len": "off",
     "no-console": "off",
